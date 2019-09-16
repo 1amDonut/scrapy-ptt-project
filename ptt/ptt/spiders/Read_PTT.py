@@ -45,7 +45,7 @@ class PttScrapy(scrapy.Spider):
 
         #內文
         item['content'] = response.xpath('//div[@id="main-content"]/text()')[0].extract()
-
+        print(item['content'])
         #解析
         start = 10
         for c, word in enumerate(item['content']):
@@ -63,11 +63,12 @@ class PttScrapy(scrapy.Spider):
 
                 start = c + 1
 
-        reply = []
+        original_reply = []
         for comments in response.xpath('//div[@class="push"]'):
             #推
             push_tag = comments.css('span.push-tag::text')[0].extract()
-
+            #使用者帳號
+            user_id = comments.css('span.push-userid::text')[0].extract()
             #回覆內容
             push_content = comments.css('span.push-content::text')[0].extract()
             #回覆時間
@@ -77,13 +78,29 @@ class PttScrapy(scrapy.Spider):
             reply_datetime = reply_str.lstrip()
 
             push_content_time = str(reply_year)+"/"+reply_datetime
-            reply.append({
+            original_reply.append({
                 'nrec' : push_tag,
+                "user" : user_id,
                 "reply" : push_content,
                 "reply_date" : push_content_time
             })
-        item['comments'] = reply
-        for row in item['comments']:
-            print(row['reply'])
 
+        item['comments'] = original_reply
+
+        # 例外處理相同留言
+        reply = []
+
+        for i,r in enumerate(original_reply):
+            message = ""
+            for j,w in enumerate(original_reply):
+                if r["user"] == w["user"] and r["reply_date"] == w["reply_date"] and i!=j and i<j :
+
+                    #print(i,r["reply_date"],j,r["reply_date"])
+
+                    #print(message+"+="+r["reply"])]
+                    message += w["reply"]
+                    #message += r["reply"]+w["reply"]
+                    #print(i,"=>",r["reply"],j,"=>",w["reply"])
+           # print(i,"推:",r['nrec'],"user",r["user"],"留言內容",r['reply']+"+"+message,'時間',r['reply_date'])
+        print("=========another================")
         yield item
